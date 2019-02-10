@@ -56,6 +56,7 @@ function timeConverter(UNIX_timestamp, includeHour = false){
         var month = months[workingDate.getMonth()];
         var date = workingDate.getDate();
         var hour = includeHour ? (workingDate.getHours()<10?'0':'') + workingDate.getHours() : '';
-        var time = date + ' ' + month + ' ' + year + ' ' + hour;
+        var minute = includeHour ? ':' + (workingDate.getMinutes()<10?'0':'') + workingDate.getMinutes() : '';
+        var time = date + ' ' + month + ' ' + year + ' ' + hour + minute;
         return time.trim();
 }
