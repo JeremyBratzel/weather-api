@@ -11,14 +11,15 @@ var apiKey = '';//put your APIKey here
       });
       
   app.get('/', (req,res) => res.send('Hello World!'));
-
+  
+  var sampleCurrentBody = '{"coord":{"lon":-82.95,"lat":42.33},"weather":[{"id":804,"main":"Clouds","description":"overcast clouds","icon":"04d"}],"base":"stations","main":{"temp":267.84,"pressure":1035,"humidity":58,"temp_min":266.45,"temp_max":269.05},"visibility":16093,"wind":{"speed":3.1,"deg":100},"clouds":{"all":90},"dt":1549812960,"sys":{"type":1,"id":6182,"message":0.004,"country":"CA","sunrise":1549802057,"sunset":1549839500},"id":5946226,"name":"East Windsor","cod":200}';
+  
   app.get('/current', (req, res) => {
         if(req.query.lat && req.query.lon){
                 request(`http://api.openweathermap.org/data/2.5/weather?lat=${req.query.lat}&lon=${req.query.lon}&appid=${apiKey}&units=imperial`, function(error, response, body) {
-                        console.log("calling current weather api");
-                        console.log(error, response, body);
                         if(!error && response.statusCode == 200){
-                                res.send(body.main.temp);//return just the temp, it's all we need.
+                                bodyAsJSON = JSON.parse(body)    
+                                res.send({date: timeConverter(bodyAsJSON.dt), temp: bodyAsJSON.main.temp, icon: bodyAsJSON.weather[0].icon});
                         } else{
                                 res.send('error calling weather api. Please try again');
                         }
@@ -29,14 +30,12 @@ var apiKey = '';//put your APIKey here
   });
   app.get('/forecast', (req, res) => {
         if(req.query.lat && req.query.lon){
-                request(`http://api.openweathermap.org/data/2.5/forecast?lat=${req.query.lat}&lon=${req.query.lon}&appid=${apiKey}&units=imperial&cnt=5`, function(error, response, body) {
-                        console.log("calling current weather api");
-                        console.log(error, response, body);
+                request(`http://api.openweathermap.org/data/2.5/forecast?lat=${req.query.lat}&lon=${req.query.lon}&appid=${apiKey}&units=imperial`, function(error, response, body) {
                         if(!error && response.statusCode == 200){
                                 let forecast = [];                  
-                                bodyAsJSON = JSON.parse(sampleForecastBody)    
-                                for (let i = 1; i <= 5; i++) {
-                                        forecast.push({date: timeConverter(bodyAsJSON.list[i].dt), temp: bodyAsJSON.list[i].main.temp});
+                                bodyAsJSON = JSON.parse(body)    
+                                for (let i = 0; i < bodyAsJSON.cnt; i++) {
+                                        forecast.push({date: timeConverter(bodyAsJSON.list[i].dt, true), temp: bodyAsJSON.list[i].main.temp, icon: bodyAsJSON.list[i].weather[0].icon});
                                 }
                                 res.send(forecast);
                         } else{
@@ -50,12 +49,13 @@ var apiKey = '';//put your APIKey here
 
 app.listen(3000, () => console.log('weather api now listening on port 3000!'));
 
-function timeConverter(UNIX_timestamp){
+function timeConverter(UNIX_timestamp, includeHour = false){
         var workingDate = new Date(UNIX_timestamp * 1000);
         var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
         var year = workingDate.getFullYear();
         var month = months[workingDate.getMonth()];
         var date = workingDate.getDate();
-        var time = date + ' ' + month + ' ' + year ;
-        return time;
+        var hour = includeHour ? (workingDate.getHours()<10?'0':'') + workingDate.getHours() : '';
+        var time = date + ' ' + month + ' ' + year + ' ' + hour;
+        return time.trim();
 }
